@@ -1,47 +1,58 @@
-import { scan } from 'qr-scanner-wechat'
-import { useEffect, useRef } from 'react'
+import { ready, scan } from 'qr-scanner-wechat'
+import { useEffect, useRef, useState } from 'react'
+import { useInterval } from 'usehooks-ts'
 
 export default function Scanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     (async ()=>{
-      if (!videoRef.current) return;
+      const video = videoRef.current;
+      if (!video) return;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
-          width: 512,
-          height: 512,
+          width: 256,
+          height: 256,
+          facingMode: 'environment',
         },
       });
-      videoRef.current.srcObject = stream;
-      videoRef.current.play();
+      video.srcObject = stream;
+      await ready();
+      setIsReady(true);
+      await video.play();
+      
     })()
   }, []);
 
   async function scanFrame() {
-    if(!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if(!video || !canvas) return;
     
-    canvasRef.current.width = videoRef.current.videoWidth;
-    canvasRef.current.height = videoRef.current.videoHeight
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
     
-    ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height)
-    const result = await scan(canvasRef.current)
-  
-    if (result?.text)
-      alert(result?.text)
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const result = await scan(canvas)
+    //const result = {text: ''}
+    if (result?.text) alert(result?.text);
   }
   
-  setInterval(scanFrame, 100) 
+  useInterval(()=>{
+    scanFrame()
+  }, isReady ? 100 : null)
 
   return (
     <>
+      {!isReady && <p>Loading...</p>}
       <video ref={videoRef} id="video" />
-      <canvas id="canvas" />
+      <canvas ref={canvasRef} id="canvas" />
     </>
     
   )

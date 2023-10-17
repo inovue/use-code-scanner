@@ -3,12 +3,14 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { container } from './App.css.ts';
+import Scanner from './components/features/Scanner/Scanner.tsx';
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
     <>
+      <Scanner />
       <div className={container}>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
