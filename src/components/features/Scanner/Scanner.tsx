@@ -1,11 +1,31 @@
 import { ready, scan } from 'qr-scanner-wechat'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
+import { ControllerProps } from './controllers'
 
-export default function Scanner() {
+export type Scanner = {
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  isReady: boolean
+}
+
+export type ScannerCoreProps = {
+  autoPlay?: boolean,
+  controllers?: React.ComponentType<ControllerProps>[]
+}
+export default function ScannerCore({autoPlay=false, controllers=[]}: ScannerCoreProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isReady, setIsReady] = useState(false)
+  const [isReady, setIsReady] = useState(false);
+  
+  const scanner:Scanner | null = useMemo(()=>{
+    if (!videoRef.current || !canvasRef.current) return null;
+    return {
+      video: videoRef.current,
+      canvas: canvasRef.current,
+      isReady
+    }
+  }, [videoRef, canvasRef, isReady])
 
   useEffect(() => {
     (async ()=>{
@@ -22,12 +42,12 @@ export default function Scanner() {
       video.srcObject = stream;
       await ready();
       setIsReady(true);
-      await video.play();
-      
+      autoPlay && await video.play();
     })()
   }, []);
 
   async function scanFrame() {
+    console.log('scanFrame')
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if(!video || !canvas) return;
@@ -46,13 +66,17 @@ export default function Scanner() {
   
   useInterval(()=>{
     scanFrame()
-  }, isReady ? 100 : null)
+  }, (isReady ) ? 100 : null)
 
+  
   return (
     <>
       {!isReady && <p>Loading...</p>}
-      <video ref={videoRef} id="video" />
+      <video ref={videoRef} id="video"/>
       <canvas ref={canvasRef} id="canvas" />
+      {scanner && controllers.map((Controller, index)=>(
+        <Controller key={index} scanner={scanner} />
+      ))}
     </>
     
   )

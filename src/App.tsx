@@ -4,13 +4,14 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { container } from './App.css.ts';
 import Scanner from './components/features/Scanner/Scanner.tsx';
+import { PlayButton } from './components/features/Scanner/controllers/PlayButton.tsx';
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
     <>
-      <Scanner />
+      <Scanner controllers={[PlayButton]}/>
       <div className={container}>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
