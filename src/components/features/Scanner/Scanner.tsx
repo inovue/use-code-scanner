@@ -2,6 +2,7 @@ import { ready, scan } from 'qr-scanner-wechat'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
 import { ControllerProps } from './controllers'
+import { listVideoInputDevices } from '@/utils/scanner'
 
 export type Scanner = {
   video: HTMLVideoElement,
@@ -11,9 +12,30 @@ export type Scanner = {
 
 export type ScannerCoreProps = {
   autoPlay?: boolean,
+  constraints?: MediaStreamConstraints,
   controllers?: React.ComponentType<ControllerProps>[]
 }
-export default function ScannerCore({autoPlay=false, controllers=[]}: ScannerCoreProps) {
+
+function handleOnStateChanged(e: Event) {
+  console.log('handleOnStateChanged', e)
+}
+
+function handleOnResized(e: Event) {
+  console.log('handleOnResized', e)
+}
+
+const defaultConstraints: MediaStreamConstraints = {
+  audio: false,
+  video: {
+    width: 256,
+    height: 256,
+    facingMode: 'environment',
+  },
+}
+
+export default function ScannerCore({autoPlay=false, constraints=defaultConstraints, controllers=[]}: ScannerCoreProps) {
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -31,19 +53,14 @@ export default function ScannerCore({autoPlay=false, controllers=[]}: ScannerCor
     (async ()=>{
       const video = videoRef.current;
       if (!video) return;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          width: 256,
-          height: 256,
-          facingMode: 'environment',
-        },
-      });
+      setDevices(await listVideoInputDevices());
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
       await ready();
       setIsReady(true);
       autoPlay && await video.play();
-    })()
+    })();
   }, []);
 
   async function scanFrame() {
@@ -62,18 +79,36 @@ export default function ScannerCore({autoPlay=false, controllers=[]}: ScannerCor
     const result = await scan(canvas)
     //const result = {text: ''}
     if (result?.text) alert(result?.text);
+
+
+    video.addEventListener('play', handleOnStateChanged);
+    video.addEventListener('playing', handleOnStateChanged);
+    video.addEventListener('pause', handleOnStateChanged);
+    video.addEventListener('emptied', handleOnStateChanged);
+    video.addEventListener('loadedmetadata', handleOnStateChanged);
+    video.addEventListener('resize', handleOnResized);
   }
   
   useInterval(()=>{
     scanFrame()
-  }, (isReady ) ? 100 : null)
+  }, (isReady ) ? 250 : null)
 
   
   return (
     <>
       {!isReady && <p>Loading...</p>}
-      <video ref={videoRef} id="video"/>
-      <canvas ref={canvasRef} id="canvas" />
+      <div>
+        <ul>
+          {devices.map((device, i)=>(
+            <li key={i}>{device.deviceId}</li>
+          ))}
+        </ul>
+      </div>
+      <div className='scnner-wrapper'>
+        <video ref={videoRef} />
+        <canvas ref={canvasRef} />
+      </div>
+      
       {scanner && controllers.map((Controller, index)=>(
         <Controller key={index} scanner={scanner} />
       ))}
