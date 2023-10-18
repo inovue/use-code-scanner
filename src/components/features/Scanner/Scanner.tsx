@@ -1,5 +1,5 @@
 import { ready, scan } from 'qr-scanner-wechat'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
 import { ControllerProps } from './controllers'
 import { listVideoInputDevices } from '@/utils/scanner'
@@ -16,7 +16,8 @@ export type ScannerCoreProps = {
   controllers?: React.ComponentType<ControllerProps>[]
 }
 
-function handleOnStateChanged(e: Event) {
+const handleOnStateChanged:EventListener = (e) => {
+  e.target
   console.log('handleOnStateChanged', e)
 }
 
@@ -40,6 +41,11 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isReady, setIsReady] = useState(false);
   
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  const videoSetRef = useCallback((node: HTMLVideoElement) => {
+    setVideo(node);
+  }, []);
+
   const scanner:Scanner | null = useMemo(()=>{
     if (!videoRef.current || !canvasRef.current) return null;
     return {
@@ -79,7 +85,6 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
     const result = await scan(canvas)
     //const result = {text: ''}
     if (result?.text) alert(result?.text);
-
 
     video.addEventListener('play', handleOnStateChanged);
     video.addEventListener('playing', handleOnStateChanged);
