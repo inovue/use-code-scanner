@@ -1,4 +1,8 @@
-import { Scanner } from "../Scanner";
+import { ScannerStatus } from "../Scanner";
 export type ControllerProps = {
-  scanner: Scanner
+  status: ScannerStatus
+  element: {
+    video: HTMLVideoElement,
+    canvas: HTMLCanvasElement,
+  }
 }

@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import {ControllerProps} from '.'
-export const PlayButton = ({scanner}: ControllerProps) => {
+export const PlayButton = ({element:{video}}: ControllerProps) => {
   const togglePlay = () => {
-    const video = scanner.video;
     if (!video) return;
     if (video.paused) {
       video.play();
@@ -10,7 +9,7 @@ export const PlayButton = ({scanner}: ControllerProps) => {
       video.pause();
     }
   }
-  const label = useMemo(()=> scanner.video.paused ? 'Play!' : 'Pause', [scanner.video.paused]);
+  const label = useMemo(()=> video.paused ? 'Play!' : 'Pause', [video.paused]);
 
   const onClick = () => togglePlay()
   
