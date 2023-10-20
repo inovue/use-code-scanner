@@ -1,20 +1,21 @@
 import { ready, scan } from 'qr-scanner-wechat'
 import {  useEffect, useMemo, useRef, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
-import { ControllerProps } from './controllers'
-import { listVideoInputDevices } from '@/utils/scanner'
+import { FeatureProps } from './features'
+import { getStatus, listVideoInputDevices } from '@/utils/scanner'
 
-export type Scanner = {
-  video: HTMLVideoElement,
-  canvas: HTMLCanvasElement,
-  isReady: boolean
-  status: ScannerStatus
+export interface Scanner {
+  status: ScannerStatus;
+  element:{
+    video: HTMLVideoElement;
+    canvas: HTMLCanvasElement;
+  }
 }
 
 export type ScannerCoreProps = {
   autoPlay?: boolean,
   constraints?: MediaStreamConstraints,
-  controllers?: React.ComponentType<ControllerProps>[]
+  features?: React.ComponentType<FeatureProps>[]
 }
 
 const defaultConstraints: MediaStreamConstraints = {
@@ -41,42 +42,8 @@ export type ScannerStatus = {
   },
 } 
 
-const getScannerStatus = (video: HTMLVideoElement, canvas: HTMLCanvasElement, event?:Event):ScannerStatus => {
-  const { videoWidth, videoHeight, srcObject } = video;
-  const { width: canvasWidth, height: canvasHeight } = canvas;
-  
-  let capabilities: MediaTrackCapabilities|null = null
-  let constraint: MediaTrackConstraints|null = null
-  let settings: MediaTrackSettings|null = null
 
-  if(video.srcObject){
-    const tracks = (srcObject as MediaStream).getVideoTracks();
-    if(tracks.length){
-      const track = tracks[0];
-      capabilities = track.getCapabilities();
-      constraint = track.getConstraints();
-      settings = track.getSettings();
-    }
-  }
-  
-  return {
-    state: event?.type || null,
-    video:{
-      width: videoWidth,
-      height: videoHeight,
-      capabilities,
-      constraint,
-      settings
-    },
-    canvas:{
-      width: canvasWidth,
-      height: canvasHeight,
-    },
-  };
-}
-
-
-export default function ScannerCore({autoPlay=false, constraints=defaultConstraints, controllers=[]}: ScannerCoreProps) {
+export default function ScannerCore({autoPlay=false, constraints=defaultConstraints, features=[]}: ScannerCoreProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,7 +52,7 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   
   const [status, setStatus] = useState<ScannerStatus|null>(null);
   
-  const controllerProps = useMemo<ControllerProps>(()=>({
+  const scanner = useMemo<Scanner>(()=>({
     status: status!,
     element: {
       video: videoRef.current!,
@@ -95,7 +62,7 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
 
 
   useEffect(() => {
-    setStatus(getScannerStatus(videoRef.current!, canvasRef.current!))
+    setStatus(getStatus(videoRef.current!, canvasRef.current!))
   }, [])
 
   useEffect(() => {
@@ -103,11 +70,11 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   }, [status])
 
   const handleOnStateChanged:EventListener = (event) => {
-    setStatus(getScannerStatus(videoRef.current!, canvasRef.current!, event))
+    setStatus(getStatus(videoRef.current!, canvasRef.current!, event))
   }
   
   const handleOnResized:EventListener = (event) => {
-    setStatus(getScannerStatus(videoRef.current!, canvasRef.current!, event))
+    setStatus(getStatus(videoRef.current!, canvasRef.current!, event))
   }
 
 
@@ -176,8 +143,8 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
         <canvas ref={canvasRef} />
       </div>
       
-      {status && controllers.map((Controller, index)=>(
-        <Controller key={index} {...controllerProps} />
+      {status && features.map((Feature, index)=>(
+        <Feature key={index} scanner={scanner} />
       ))}
     </>
     
