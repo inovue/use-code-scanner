@@ -1,8 +1,10 @@
-import { ready, scan } from 'qr-scanner-wechat'
-import {  useEffect, useMemo, useRef, useState } from 'react'
+import { ready, ScanResult } from 'qr-scanner-wechat'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
 import { FeatureProps } from './features'
 import { getStatus, listVideoInputDevices } from '@/utils/scanner'
+
+import decoderWorker from "./decoder.worker?worker";
 
 export interface Scanner {
   status: ScannerStatus;
@@ -52,17 +54,33 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   
   const [status, setStatus] = useState<ScannerStatus|null>(null);
   
+  const workerThreads = useRef<{id:number, worker:Worker, status:string}[]>([]);
+
   const scanner = useMemo<Scanner>(()=>({
     status: status!,
     element: {
       video: videoRef.current!,
       canvas: canvasRef.current!,
     }
-  }), [status])
+  }), [status]);
 
 
   useEffect(() => {
-    setStatus(getStatus(videoRef.current!, canvasRef.current!))
+    //workerRef.current = new decoderWorker();
+    [...Array(8)].forEach((_, i)=> workerThreads.current.push({id:i, worker: new decoderWorker(), status: ''}));
+    workerThreads.current.forEach((thread)=>{
+      thread.worker.onmessage = (event:MessageEvent<{id:number, result:ScanResult}>) => {
+        const data = event.data;
+        workerThreads.current[data.id].status = '';
+        console.log("メインスレッドで受信:", data.result.text);
+      };
+    });
+
+    setStatus(getStatus(videoRef.current!, canvasRef.current!));
+
+    return () => {
+      workerThreads.current.forEach((thread)=>thread.worker.terminate());
+    };
   }, [])
 
   useEffect(() => {
@@ -100,7 +118,7 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
     })();
   }, []);
 
-  async function scanFrame() {
+  function scanFrame() {
     console.log('scanFrame')
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -112,20 +130,17 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
     
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
-    const timestamp = Date.now();
-    console.time(`scan-${timestamp}`);
-    const result = await scan(canvas)
-    console.timeEnd(`scan-${timestamp}`);
-    
-    //const result = {text: ''}
-    if (result?.text) alert(result?.text);
+    workerThreads.current.find((thread)=>thread.status === '')?.worker.postMessage(imageData);
+    workerRef.current && workerRef.current.postMessage(imageData);
+  
   }
   
   useInterval(()=>{
-    (async () => await scanFrame())()
-  }, (isReady ) ? 100 : null)
+    scanFrame()
+  }, (isReady && status?.state === 'playing' ) ? 100 : null)
 
   
   return (
