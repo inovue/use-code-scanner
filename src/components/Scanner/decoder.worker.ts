@@ -1,10 +1,12 @@
 import { scan } from 'qr-scanner-wechat'
 
-self.addEventListener('message', (event:MessageEvent<HTMLCanvasElement>) => {
-  const canvas = event.data;
-  scan(canvas).then((result) => {
-    console.log(result);
-    self.postMessage(result.text);
+self.addEventListener('message', (event:MessageEvent<ImageData>) => {
+  const eventData = event.data;
+  console.log("get message", eventData);
+
+  scan(eventData).then((result) => {
+    console.log("scaned", result);
+    self.postMessage(eventData);
   });
 });
 

@@ -54,7 +54,7 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   
   const [status, setStatus] = useState<ScannerStatus|null>(null);
   
-  const workerThreads = useRef<{id:number, worker:Worker, status:string}[]>([]);
+  const workerThread = useRef<{worker:Worker, status:string}>({worker: new decoderWorker(), status: ''});
 
   const scanner = useMemo<Scanner>(()=>({
     status: status!,
@@ -66,20 +66,17 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
 
 
   useEffect(() => {
-    //workerRef.current = new decoderWorker();
-    [...Array(8)].forEach((_, i)=> workerThreads.current.push({id:i, worker: new decoderWorker(), status: ''}));
-    workerThreads.current.forEach((thread)=>{
-      thread.worker.onmessage = (event:MessageEvent<{id:number, result:ScanResult}>) => {
-        const data = event.data;
-        workerThreads.current[data.id].status = '';
-        console.log("メインスレッドで受信:", data.result.text);
-      };
-    });
+    workerThread.current.worker.onmessage = (event:MessageEvent<ScanResult>) => {
+      const result = event.data;
+      workerThread.current.status = '';
+
+      console.log("メインスレッドで受信:", result);
+    };
 
     setStatus(getStatus(videoRef.current!, canvasRef.current!));
 
     return () => {
-      workerThreads.current.forEach((thread)=>thread.worker.terminate());
+      workerThread.current.worker.terminate();
     };
   }, [])
 
@@ -119,7 +116,6 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
   }, []);
 
   function scanFrame() {
-    console.log('scanFrame')
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if(!video || !canvas) return;
@@ -133,14 +129,18 @@ export default function ScannerCore({autoPlay=false, constraints=defaultConstrai
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
-    workerThreads.current.find((thread)=>thread.status === '')?.worker.postMessage(imageData);
-    workerRef.current && workerRef.current.postMessage(imageData);
+    if(workerThread.current.status === ''){
+      workerThread.current.status = 'busy';
+      workerThread.current.worker.postMessage(imageData);
+    }else{
+      console.warn('worker is busy');
+    }
   
   }
   
   useInterval(()=>{
     scanFrame()
-  }, (isReady && status?.state === 'playing' ) ? 100 : null)
+  }, (isReady && status?.state === 'playing' ) ? 150 : null)
 
   
   return (
