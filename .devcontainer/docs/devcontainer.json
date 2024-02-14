@@ -3,7 +3,16 @@
   "containerEnv": {
     "TZ": "Asia/Tokyo"
   },
-  "runArgs": ["--privileged", "--init", "--env-file", ".devcontainer/.env.dev"],
+  "runArgs": [
+    "--privileged", 
+    "--init", 
+    "--env-file", ".devcontainer/.env.dev",
+    "--name", "${localWorkspaceFolderBasename}-docs"
+  ],
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}_docs_node_modules,target=${containerWorkspaceFolder}/docs/node_modules,type=volume",
+    "source=${localWorkspaceFolderBasename}_packages_node_modules,target=${containerWorkspaceFolder}/packages/node_modules,type=volume"
+  ],
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-contrib/features/act:1": {},
