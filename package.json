@@ -1,0 +1,5 @@
+{
+  "name": "use-code-scanner--root",
+  "private": true,
+  "workspaces": ["packages/*", "docs/*"]
+}
