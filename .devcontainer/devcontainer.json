@@ -1,42 +1,37 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:18-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
   "containerEnv": {
     "TZ": "Asia/Tokyo"
   },
-  "runArgs": ["--privileged", "--init"],
+  "runArgs": ["--privileged", "--init", "--env-file", ".devcontainer/.env.dev"],
   "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-contrib/features/act:1": {},
+    "ghcr.io/prulloac/devcontainer-features/bun:latest": {}
   },
   "postCreateCommand": "",
   "customizations": {
     "vscode": {
       "settings": {
-        "editor.renderWhitespace": "all",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "quickfix.biome": true,
+          "source.organizeImports.biome": true
+        },
         "[js][jsx][ts][tsx]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode",
-          "editor.formatOnSave": true,
-          "editor.codeActionsOnSave": {
-            "source.fixAll": true,
-            "source.organizeImports": true
-          }
+          "editor.defaultFormatter": "biomejs.biome"
         },
         "[json][jsonc]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode",
-          "editor.formatOnSave": true,
-          "editor.codeActionsOnSave": {
-            "source.fixAll": true
-          }
+          "editor.defaultFormatter": "biomejs.biome"
         }
       },
       "extensions": [
         "GitHub.copilot",
         "GitHub.copilot-chat",
-        "mhutchie.git-graph",
         "GitHub.vscode-pull-request-github",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "ms-vscode.live-server",
-        "bradlc.vscode-tailwindcss"
+        "mhutchie.git-graph",
+        "biomejs.biome",
+        "EditorConfig.EditorConfig"
       ]
     }
   }
