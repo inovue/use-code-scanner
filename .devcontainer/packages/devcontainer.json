@@ -31,7 +31,10 @@
         "GitHub.vscode-pull-request-github",
         "mhutchie.git-graph",
         "biomejs.biome",
-        "EditorConfig.EditorConfig"
+        "EditorConfig.EditorConfig",
+        "folke.vscode-monorepo-workspace",
+        "astro-build.astro-vscode",
+        "bradlc.vscode-tailwindcss"
       ]
     }
   }

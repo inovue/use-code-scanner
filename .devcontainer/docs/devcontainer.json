@@ -1,0 +1,39 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
+  "containerEnv": {
+    "TZ": "Asia/Tokyo"
+  },
+  "runArgs": ["--privileged", "--init", "--env-file", ".devcontainer/.env.dev"],
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-contrib/features/act:1": {},
+    "ghcr.io/prulloac/devcontainer-features/bun:latest": {}
+  },
+  "postCreateCommand": "",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "quickfix.biome": true,
+          "source.organizeImports.biome": true
+        },
+        "[js][jsx][ts][tsx]": {
+          "editor.defaultFormatter": "biomejs.biome"
+        },
+        "[json][jsonc]": {
+          "editor.defaultFormatter": "biomejs.biome"
+        }
+      },
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-pull-request-github",
+        "mhutchie.git-graph",
+        "biomejs.biome",
+        "EditorConfig.EditorConfig",
+        "folke.vscode-monorepo-workspace"
+      ]
+    }
+  }
+}
