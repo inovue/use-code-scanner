@@ -6,19 +6,20 @@
   "runArgs": [
     "--privileged", 
     "--init", 
-    "--env-file", ".devcontainer/docs/.env.dev",
+    "--env-file", ".devcontainer/.env.dev",
     "--name", "${localWorkspaceFolderBasename}-docs"
   ],
+  "workspaceMount": "source=${localWorkspaceFolder}/..,target=${containerWorkspaceFolder},type=bind,consistency=cached",
   "mounts": [
     "source=${localWorkspaceFolderBasename}_docs_node_modules,target=${containerWorkspaceFolder}/docs/node_modules,type=volume",
-    //"source=${localWorkspaceFolder}/.devcontainer/docs/.code-workspace,target=${containerWorkspaceFolder}/.code-workspace,type=bind"
+    //"source=${localWorkspaceFolder}/.devcontainer/.code-workspace,target=${containerWorkspaceFolder}/.code-workspace,type=bind"
   ],
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-contrib/features/act:1": {},
     "ghcr.io/prulloac/devcontainer-features/bun:latest": {}
   },
-  "postCreateCommand": "bash .devcontainer/docs/postCreateCommand.sh",
+  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
   "customizations": {
     "vscode": {
       "settings": {
@@ -32,8 +33,7 @@
         },
         "[json][jsonc]": {
           "editor.defaultFormatter": "biomejs.biome"
-        },
-        //"autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
+        }
       },
       "extensions": [
         "GitHub.copilot",
@@ -41,8 +41,7 @@
         "GitHub.vscode-pull-request-github",
         "mhutchie.git-graph",
         "biomejs.biome",
-        "EditorConfig.EditorConfig",
-        "zoma.vscode-auto-open-workspace"
+        "EditorConfig.EditorConfig"
       ]
     }
   }
