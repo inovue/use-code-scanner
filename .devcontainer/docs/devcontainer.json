@@ -6,7 +6,7 @@
   "runArgs": [
     "--privileged", 
     "--init", 
-    "--env-file", ".devcontainer/.env.dev",
+    "--env-file", ".devcontainer/docs/.env.dev",
     "--name", "${localWorkspaceFolderBasename}-docs"
   ],
   "mounts": [

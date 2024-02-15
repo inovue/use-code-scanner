@@ -6,7 +6,7 @@
   "runArgs": [
     "--privileged", 
     "--init", 
-    "--env-file", ".devcontainer/.env.dev",
+    "--env-file", ".devcontainer/packages/.env.dev",
     "--name", "${localWorkspaceFolderBasename}-packages"
   ],
   "mounts": [
