@@ -18,7 +18,7 @@
     "ghcr.io/devcontainers-contrib/features/act:1": {},
     "ghcr.io/prulloac/devcontainer-features/bun:latest": {}
   },
-  "postCreateCommand": "",
+  "postCreateCommand": "bash .devcontainer/docs/postCreateCommand.sh",
   "customizations": {
     "vscode": {
       "settings": {
