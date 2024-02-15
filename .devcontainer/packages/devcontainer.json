@@ -32,7 +32,8 @@
         },
         "[json][jsonc]": {
           "editor.defaultFormatter": "biomejs.biome"
-        }
+        },
+        "autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
       },
       "extensions": [
         "GitHub.copilot",
@@ -43,7 +44,8 @@
         "EditorConfig.EditorConfig",
         "folke.vscode-monorepo-workspace",
         "astro-build.astro-vscode",
-        "bradlc.vscode-tailwindcss"
+        "bradlc.vscode-tailwindcss",
+        "zoma.vscode-auto-open-workspace"
       ]
     }
   }

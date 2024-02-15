@@ -11,7 +11,7 @@
   ],
   "mounts": [
     "source=${localWorkspaceFolderBasename}_docs_node_modules,target=${containerWorkspaceFolder}/docs/node_modules,type=volume",
-    "source=${localWorkspaceFolderBasename}_packages_node_modules,target=${containerWorkspaceFolder}/packages/node_modules,type=volume"
+    //"source=${localWorkspaceFolder}/.devcontainer/docs/.code-workspace,target=${containerWorkspaceFolder}/.code-workspace,type=bind"
   ],
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
@@ -32,7 +32,8 @@
         },
         "[json][jsonc]": {
           "editor.defaultFormatter": "biomejs.biome"
-        }
+        },
+        //"autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
       },
       "extensions": [
         "GitHub.copilot",
@@ -41,7 +42,7 @@
         "mhutchie.git-graph",
         "biomejs.biome",
         "EditorConfig.EditorConfig",
-        "folke.vscode-monorepo-workspace"
+        "zoma.vscode-auto-open-workspace"
       ]
     }
   }
