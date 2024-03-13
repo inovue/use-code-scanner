@@ -1,4 +1,5 @@
 {
+  "name": "use-code-scanner",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:18-bullseye",
   "containerEnv": {
     "TZ": "Asia/Tokyo"
