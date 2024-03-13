@@ -4,10 +4,14 @@
     "TZ": "Asia/Tokyo"
   },
   "runArgs": ["--privileged", "--init"],
-  "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {}
-  },
-  "postCreateCommand": "",
+  "features": {},
+
+  "postCreateCommand": "sudo chown -R node:node /workspaces/use-code-scanner",
+  "mounts": [
+    "source=use-code-scanner-docs-node_modules,target=${containerWorkspaceFolder}/docs/node_modules,type=volume",
+    "source=use-code-scanner-packages-node_modules,target=${containerWorkspaceFolder}/packages/node_modules,type=volume"
+  ],
+  "remoteUser": "node",
   "customizations": {
     "vscode": {
       "settings": {
