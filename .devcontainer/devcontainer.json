@@ -42,7 +42,8 @@
         "esbenp.prettier-vscode",
         "ms-vscode.live-server",
         "bradlc.vscode-tailwindcss",
-        "astro-build.astro-vscode"
+        "astro-build.astro-vscode",
+        "EditorConfig.EditorConfig"
       ]
     }
   }
