@@ -1,24 +1,12 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import { useVideoDevices } from './useVideoDevices';
+import { getTrack, getZoomValue } from '../utils/media';
+import { scanImageData } from '@undecaf/zbar-wasm';
 
 export type UseCodeScannerOptions = {
   autoPlay?: boolean;
   facingMode?: ConstrainDOMString;
 };
-
-export interface MediaTrackAdvancedCapabilities extends MediaTrackCapabilities {
-  torch?:boolean;
-  zoom?:DoubleRange & {step?:number};
-}
-
-export interface MediaTrackAdvancedConstraintSet extends MediaTrackConstraintSet {
-  torch?:boolean;
-  zoom?:ConstrainDouble;
-}
-
-export interface MediaTrackAdvancedConstraints extends MediaTrackConstraints {
-  advanced?: MediaTrackAdvancedConstraintSet[];
-}
 
 export function useCodeScanner(options: UseCodeScannerOptions = {autoPlay: true, facingMode: 'environment'}) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,7 +15,7 @@ export function useCodeScanner(options: UseCodeScannerOptions = {autoPlay: true,
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean|null>(null);
   const [isTorched, setIsTorched] = useState<boolean|null>(null);
-  const [zoom, setZoom] = useState<number|null>(null);
+  const [zoomValue, setZoomValue] = useState<number|null>(null);
 
   const devices = useVideoDevices();
 
@@ -37,14 +25,21 @@ export function useCodeScanner(options: UseCodeScannerOptions = {autoPlay: true,
       value ? video.play() : video.pause();
     }
   }
-  const setZoom = (value:number) => {
-    const video = videoRef.current;
-    if (video?.srcObject){
-      const track = (video.srcObject as MediaStream).getTracks()?.[0];
-      (track.getCapabilities() as MediaTrackAdvancedCapabilities).zoom?.max
-    }
+
+  const initCanvas = (video:HTMLVideoElement,  canvas:HTMLCanvasElement) => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
   }
 
+  const scan = async (video:HTMLVideoElement,  canvas:HTMLCanvasElement) => {
+    const canvasContext = canvas.getContext('2d');
+    if (!canvasContext) return null;
+    canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+    const symbols = await scanImageData(imageData);
+    const results = symbols.map(symbol => symbol.decode());
+    return results;
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -56,8 +51,10 @@ export function useCodeScanner(options: UseCodeScannerOptions = {autoPlay: true,
     options.autoPlay && video.play();
 
     video.onload = () => {
-      video.width = video.videoWidth;
-      video.height = video.videoHeight;
+      const track = getTrack(video);
+      if(track){
+        setZoomValue(()=>getZoomValue(track))
+      }
     }
     video.onplay = () => {
       setIsPlaying(()=>true);
