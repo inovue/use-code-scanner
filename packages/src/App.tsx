@@ -3,15 +3,20 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import { useVideoDevices } from './hooks/useVideoDevices';
 import './App.css'
+import { useCodeScanner } from './hooks/useCodeScanner';
 
 function App() {
 
   const [count, setCount] = useState(0)
   const devices = useVideoDevices();
+  const [Scanner, controller] = useCodeScanner();
 
   return (
     <>
-      <pre>{JSON.stringify(devices, null,2)}</pre>
+      <div>
+        <Scanner></Scanner>
+      </div>
+      <pre>{JSON.stringify(devices, null, 2)}</pre>
       <div>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />

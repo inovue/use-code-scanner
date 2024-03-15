@@ -1,5 +1,6 @@
 import { scanImageData } from '@undecaf/zbar-wasm';
 
+
 export interface MediaTrackAdvancedCapabilities extends MediaTrackCapabilities {
   torch?:boolean;
   zoom?:DoubleRange & {step?:number};
@@ -16,14 +17,17 @@ export interface MediaTrackAdvancedConstraints extends MediaTrackConstraints {
 
 
 export type CodeScannerOptions = {
-  autoPlay?: boolean;
-  facingMode?: ConstrainDOMString;
+  sleep: number;
+  interval: number;
+  autoPlay: boolean;
+  facingMode: ConstrainDOMString;
 };
 
 export class CodeScanner {
   private _video: HTMLVideoElement;
   private _canvas: HTMLCanvasElement;
-  private _scanningId: number | null = null;
+  private _scanId: number | null = null;
+  private _sleepId: number | null = null;
 
   constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, options: CodeScannerOptions) {
     this._video = video;
@@ -74,26 +78,35 @@ export class CodeScanner {
   }
   set play(value:boolean) {
     if(value){
-      this._video.play().then(()=> this.scanning(true) );
+      this._video.play().then(()=>{
+        this.scan(true);
+      });
     }else{
-      this.scanning(false);
+      this.scan(false);
       this._video.pause();
     }
   }
 
-  private scanning(value:boolean) {
+
+  private scan(value:boolean) {
     if(value){
-      if(!this._scanningId){
-        this._scanningId = setInterval(() => this.decode(), 500);
+      if(!this._scanId){
+        this._scanId = setInterval(() => this.decode(), 500);
+      }
+      if(!this._sleepId){
+        this._sleepId = setTimeout(() => { this.play = false; }, 5000);
       }
     }else{
-      if(this._scanningId){
-        clearInterval(this._scanningId);
-        this._scanningId = null;
+      if(this._scanId){
+        clearInterval(this._scanId);
+        this._scanId = null;
+      }
+      if(this._sleepId){
+        clearTimeout(this._sleepId);
+        this._sleepId = null;
       }
     }
   }
-
 
   private async decode(){
     const canvasContext = this._canvas.getContext('2d');
