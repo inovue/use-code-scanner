@@ -14,25 +14,32 @@ export interface MediaTrackAdvancedConstraints extends MediaTrackConstraints {
   advanced?: MediaTrackAdvancedConstraintSet[];
 }
 
-export const getDevices = async () =>{
-  const devices = await navigator.mediaDevices.enumerateDevices().catch(
-    (err) => {
-      console.error('Error getting devices', err);
-      return [];
-    }
-  );
-  const videoDevices = devices.filter(device => device.kind === 'videoinput');
-  return videoDevices;
-}
+
+export type CodeScannerOptions = {
+  autoPlay?: boolean;
+  facingMode?: ConstrainDOMString;
+};
 
 export class CodeScanner {
   private _video: HTMLVideoElement;
   private _canvas: HTMLCanvasElement;
+  private _scanningId: number | null = null;
 
-  constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
+  constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, options: CodeScannerOptions) {
     this._video = video;
     this._canvas = canvas;
+
+    navigator.mediaDevices.getUserMedia({video:{facingMode:options.facingMode}}).then((stream) => {
+      this._video.srcObject = stream;
+      this.setCanvas();
+    });
   }
+
+  private setCanvas() {
+    this._canvas.width = this._video.videoWidth;
+    this._canvas.height = this._video.videoHeight;
+  }
+
   get track() {
     const tracks = (this._video.srcObject as MediaStream).getTracks();
     return tracks.length > 0 ? tracks[0] : null;
@@ -50,18 +57,45 @@ export class CodeScanner {
     return this.constraints?.advanced?.[0].zoom || null;
   }
   set zoom(value:ConstrainDouble|null) {
-    // Implementation needed
+    // @ts-expect-error - advanced is not in the MediaTrackConstraints type
+    this.track && this.track.applyConstraints({advanced:[{zoom:value}]})
   }
 
   get torch(){
     return this.constraints?.advanced?.[0].torch || null;
   }
   set torch(value:boolean|null) {
-    // Implementation needed
+    // @ts-expect-error - advanced is not in the MediaTrackConstraints type
+    this.track && this.track.applyConstraints({advanced:[{torch:value}]})
+  }
+
+  get play() {
+    return !this._video.paused;
+  }
+  set play(value:boolean) {
+    if(value){
+      this._video.play().then(()=> this.scanning(true) );
+    }else{
+      this.scanning(false);
+      this._video.pause();
+    }
+  }
+
+  private scanning(value:boolean) {
+    if(value){
+      if(!this._scanningId){
+        this._scanningId = setInterval(() => this.decode(), 500);
+      }
+    }else{
+      if(this._scanningId){
+        clearInterval(this._scanningId);
+        this._scanningId = null;
+      }
+    }
   }
 
 
-  async scan(){
+  private async decode(){
     const canvasContext = this._canvas.getContext('2d');
     if (!canvasContext) return [];
     canvasContext.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
@@ -71,3 +105,4 @@ export class CodeScanner {
     return results;
   }
 }
+
