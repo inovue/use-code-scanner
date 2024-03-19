@@ -25,7 +25,7 @@ export function useCodeScanner(options: CodeScannerOptions = defaultOptions) {
   const Scanner = () => {
     return (
       <div className='code-scanner'>
-        <video className='code-scanner-video' ref={videoRef} />
+        <video className='code-scanner-video' ref={videoRef} playsInline />
         <canvas className='code-scanner-canvas' ref={canvasRef} />
       </div>
     )
