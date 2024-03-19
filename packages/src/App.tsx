@@ -9,12 +9,13 @@ function App() {
 
   const [count, setCount] = useState(0)
   const devices = useVideoDevices();
-  const [Scanner, controller] = useCodeScanner();
+  const {Scanner, controller} = useCodeScanner();
 
   return (
     <>
       <div>
         <Scanner></Scanner>
+        <button onClick={()=>controller.play = true}>Start</button>
       </div>
       <pre>{JSON.stringify(devices, null, 2)}</pre>
       <div>

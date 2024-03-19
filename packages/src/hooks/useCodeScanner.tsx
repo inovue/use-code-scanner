@@ -31,7 +31,7 @@ export function useCodeScanner(options: CodeScannerOptions = defaultOptions) {
     )
   };
 
-  return [Scanner, controller];
+  return {Scanner, controller};
 }
 
 
