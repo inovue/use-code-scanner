@@ -1,4 +1,5 @@
 import { scanImageData } from '@undecaf/zbar-wasm';
+import { createRef } from 'react';
 
 
 export interface MediaTrackAdvancedCapabilities extends MediaTrackCapabilities {
@@ -24,24 +25,28 @@ export type CodeScannerOptions = {
 };
 
 export class CodeScanner {
-  private _video: HTMLVideoElement;
-  private _canvas: HTMLCanvasElement;
+  private _video: React.RefObject<HTMLVideoElement>;
+  private _canvas: React.RefObject<HTMLCanvasElement>;
   private _scanId: number | null = null;
   private _sleepId: number | null = null;
 
-  constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, options: CodeScannerOptions) {
-    this._video = video;
-    this._canvas = canvas;
+  constructor( options: CodeScannerOptions) {
+    this._video = createRef<HTMLVideoElement>();
+    this._canvas = createRef<HTMLCanvasElement>();
 
     navigator.mediaDevices.getUserMedia({video:{facingMode:options.facingMode}}).then((stream) => {
-      this._video.srcObject = stream;
+      console.log('stream', stream);
+      if(this._video.current) this._video.current.srcObject = stream;
       this.setCanvas();
     });
   }
 
   private setCanvas() {
-    this._canvas.width = this._video.videoWidth;
-    this._canvas.height = this._video.videoHeight;
+    if(this._video.current && this._canvas.current){
+      this._canvas.current.width = this._video.current.videoWidth;
+      this._canvas.current.height = this._video.current.videoHeight;
+    }
+
   }
 
   get track() {

@@ -13,10 +13,13 @@ function App() {
 
   return (
     <>
-      <div>
+    {controller &&
+        <button onClick={()=> controller.play = true}>Start</button>
+      }
+      <div style={{ position:'relative', width:"100%", height:'90dvh', backgroundColor:'#333'}}>
         <Scanner></Scanner>
-        <button onClick={()=>controller.play = true}>Start</button>
       </div>
+
       <pre>{JSON.stringify(devices, null, 2)}</pre>
       <div>
         <a href="https://vitejs.dev" target="_blank">

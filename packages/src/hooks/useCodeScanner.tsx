@@ -17,20 +17,36 @@ export function useCodeScanner(options: CodeScannerOptions = defaultOptions) {
   useEffect(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!canvasRef.current || !videoRef.current) return;
 
-    setController(()=>new CodeScanner(video, canvas, options))
+    setController(()=>new CodeScanner(options))
   }, [options]);
 
   const Scanner = () => {
     return (
-      <div className='code-scanner'>
-        <video className='code-scanner-video' ref={videoRef} playsInline />
-        <canvas className='code-scanner-canvas' ref={canvasRef} />
+      <div className='code-scanner' style={containerStyle}>
+        <video className='code-scanner-video' style={videoStyle} ref={videoRef} playsInline />
+        <canvas className='code-scanner-canvas' style={cavasStyle} ref={canvasRef} />
       </div>
     )
   };
 
+  const containerStyle:React.CSSProperties = {
+    width: 'auto',
+    maxWidth: '100%',
+    height: '100%',
+    position: 'absolute',
+    margin: 'auto',
+    left: 0,
+    right: 0,
+  }
+  const videoStyle:React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+  }
+  const cavasStyle:React.CSSProperties = {
+    //display: 'none',
+  }
   return {Scanner, controller};
 }
 
