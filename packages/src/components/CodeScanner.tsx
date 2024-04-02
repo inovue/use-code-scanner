@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { CodeScannerController, CodeScannerControllerOptions, defaultId, defaultOptions } from "../libs/CodeScannerController";
 import { PlayButton } from "./features/PlayButton";
+import { TorchButton } from "./features/TorchButton";
+import { ZoomSlider } from "./features/ZoomSlider";
 
 export type CodeScannerProps = {
   id?: string;
@@ -8,30 +10,8 @@ export type CodeScannerProps = {
 };
 
 export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerProps) => {
-  const [, forceRender] = useState(true);
   const ref = useRef<CodeScannerController|null>(null);
-  useEffect(() => {
-    //if (ref.current === null) ref.current = new CodeScannerController(id, options);
-    /*
-    const controller = ref.current;
-
-    // Timeout to allow the clean-up function to finish in case of double render.
-    setTimeout(() => {
-      const container = document.getElementById(id);
-      if (controller && container?.innerHTML == "") {
-        controller.render(qrCodeSuccessCallback, qrCodeErrorCallback);
-      }
-    }, 0);
-
-    return () => {
-      if (controller) {
-        controller.clear();
-      }
-    };
-    */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  const [, forceRender] = useState(true);
 
   const instantiateController = useCallback((node:HTMLDivElement) => {
     if (node !== null && ref.current === null) {
@@ -39,9 +19,10 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
       ref.current.addObserver(
         (propertyName: string, oldValue, newValue) => {
           console.log(propertyName, oldValue, newValue);
+          console.info('scanner', ref.current);
           forceRender(n => !n);
         }
-    );
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -55,10 +36,11 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
 
   return (
     <>
-      <div id={id} style={containerStyle} ref={instantiateController} >
-
+      <div id={id} style={containerStyle} ref={instantiateController}>
       </div>
       {ref.current && <PlayButton scanner={ref.current} />}
+      {ref.current && ref.current.torch !== null && <TorchButton scanner={ref.current} />}
+      {ref.current && ref.current.zoom !== null && <ZoomSlider scanner={ref.current} />}
     </>
   );
 };

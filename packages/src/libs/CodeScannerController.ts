@@ -1,5 +1,4 @@
 import { scanImageData } from '@undecaf/zbar-wasm';
-import { drawImage } from './drawImage';
 
 type Observer = (<T>(a: string, b: T, c: T) => void);
 
@@ -44,23 +43,34 @@ export class CodeScannerController {
     return this.track ? this.track.getConstraints() as MediaTrackAdvancedConstraints : null;
   }
 
-  get zoom(){
-    return this.constraints?.advanced?.[0].zoom || null;
+  get zoom():{min?:number, max?:number, step?:number, value?:number}|null{
+    const capability = this.capabilities?.zoom;
+    if(!capability) return null;
+    const value = {
+      max: capability.max,
+      min: capability.min,
+      step: capability.step,
+      value: this.constraints?.advanced?.[0].zoom || capability.min
+    }
+    return value;
   }
-  set zoom(value:ConstrainDouble|null) {
-    if (this.zoom === value) return;
-    this.notifyObserver("zoom", this.zoom, value);
+  set zoom(value:number) {
+    if (this.zoom?.value === value) return;
+    this.notifyObserver("zoom", this.zoom?.value, value);
 
     // @ts-expect-error - advanced is not in the MediaTrackConstraints type
     this.track && this.track.applyConstraints({advanced:[{zoom:value}]})
   }
 
-  get torch(){
-    return this.constraints?.advanced?.[0].torch || null;
+  get torch():boolean|null{
+    const capability = this.capabilities?.torch;
+    if(!capability) return null;
+
+    return this.constraints?.advanced?.[0].torch || false;
   }
 
-  set torch(value:boolean|null) {
-    if (this.torch === value) return;
+  set torch(value:boolean){
+    if (this.torch === null || this.torch === value) return;
     this.notifyObserver("torch", this.torch, value);
 
     // @ts-expect-error - advanced is not in the MediaTrackConstraints type
@@ -96,12 +106,30 @@ export class CodeScannerController {
 
   private async decode(){
     console.time("decode");
-    const imageData = await drawImage(this._video);
+    const imageData = this.drawImage(this._video);
     const symbols = await scanImageData(imageData);
     const results = symbols.map(symbol => symbol.decode());
     console.timeEnd("decode");
     console.log('results', results);
     return results;
+  }
+
+  private drawImage(video: HTMLVideoElement): ImageData {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Failed to get 2d context from canvas');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
+    try {
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      return imageData;
+    } catch (error) {
+      throw new Error('Failed to create ImageData from canvas');
+    }
   }
 
   public addObserver(observer: Observer) {
@@ -121,7 +149,7 @@ export interface MediaTrackAdvancedCapabilities extends MediaTrackCapabilities {
 
 export interface MediaTrackAdvancedConstraintSet extends MediaTrackConstraintSet {
   torch?:boolean;
-  zoom?:ConstrainDouble;
+  zoom?:number;
 }
 
 export interface MediaTrackAdvancedConstraints extends MediaTrackConstraints {
