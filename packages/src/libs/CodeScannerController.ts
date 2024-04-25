@@ -3,6 +3,7 @@ import { scanImageData } from '@undecaf/zbar-wasm';
 type Observer = (<T>(a: string, b: T, c: T) => void);
 
 export class CodeScannerController {
+  private _devices: MediaDeviceInfo[] = [];
   private _video: HTMLVideoElement;
   private _scanId: number | null = null;
   private _sleepId: number | null = null;
@@ -19,11 +20,21 @@ export class CodeScannerController {
     this._video.style.height = '100%';
     container.appendChild(this._video);
 
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      this._devices = devices.filter(device => device.kind === 'videoinput');
+
+    }).catch((err) => {
+      console.error('Error getting devices', err);
+    });
 
     navigator.mediaDevices.getUserMedia({video:{facingMode:options.facingMode},audio:false}).then((stream) => {
       if(this._video) this._video.srcObject = stream;
       if(options.autoPlay) this.play = true;
     });
+  }
+
+  get devices(){
+    return this._devices;
   }
 
   get video(){
@@ -59,7 +70,7 @@ export class CodeScannerController {
     this.notifyObserver("zoom", this.zoom?.value, value);
 
     // @ts-expect-error - advanced is not in the MediaTrackConstraints type
-    this.track && this.track.applyConstraints({advanced:[{zoom:value}]})
+    this.track && this.track.applyConstraints({advanced:[{torch: this.torch, zoom:value }]})
   }
 
   get torch():boolean|null{
@@ -74,7 +85,7 @@ export class CodeScannerController {
     this.notifyObserver("torch", this.torch, value);
 
     // @ts-expect-error - advanced is not in the MediaTrackConstraints type
-    this.track && this.track.applyConstraints({advanced:[{torch:value}]})
+    this.track && this.track.applyConstraints({advanced:[{torch:value, zoom: this.zoom?.value}]})
   }
 
   get play() {

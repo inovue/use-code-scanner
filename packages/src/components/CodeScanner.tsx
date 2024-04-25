@@ -19,7 +19,6 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
       ref.current.addObserver(
         (propertyName: string, oldValue, newValue) => {
           console.log(propertyName, oldValue, newValue);
-          console.info('scanner', ref.current);
           forceRender(n => !n);
         }
       );
@@ -30,7 +29,7 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
   const containerStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
-    height: "90dvh",
+    height: "100dvh",
     backgroundColor:'#333'
   };
 
@@ -38,9 +37,15 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
     <>
       <div id={id} style={containerStyle} ref={instantiateController}>
       </div>
-      {ref.current && <PlayButton scanner={ref.current} />}
-      {ref.current && ref.current.torch !== null && <TorchButton scanner={ref.current} />}
-      {ref.current && ref.current.zoom !== null && <ZoomSlider scanner={ref.current} />}
+      {ref.current &&
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-3">
+            <ZoomSlider scanner={ref.current} />
+          </div>
+          <PlayButton scanner={ref.current} />
+          <TorchButton scanner={ref.current} />
+        </div>
+      }
     </>
   );
 };

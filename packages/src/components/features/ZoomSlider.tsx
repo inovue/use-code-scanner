@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { CodeScannerController } from "../../libs/CodeScannerController";
 
 export type ZoomSliderProps= {
   scanner: CodeScannerController;
 };
 export const ZoomSlider = ({scanner}: ZoomSliderProps) => {
+  const disabled = useMemo(() => scanner.zoom === null, [scanner.zoom]);
   const onChange:React.ChangeEventHandler<HTMLInputElement> = (event) => {
     event.preventDefault();
     if(scanner.zoom !== null){
@@ -11,6 +13,6 @@ export const ZoomSlider = ({scanner}: ZoomSliderProps) => {
     }
   }
   return (
-    <input type="range" {...scanner.zoom} onChange={onChange} />
+    <input disabled={disabled} type="range" {...scanner.zoom} onChange={onChange} />
   );
 }

@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { CodeScannerController } from "../../libs/CodeScannerController";
 
-export type TorchButtonProps= {
+export type SwitchDeviceButtonProps= {
   scanner: CodeScannerController;
 };
-export const TorchButton = ({scanner}: TorchButtonProps) => {
+export const SwitchDeviceButton = ({scanner}: SwitchDeviceButtonProps) => {
   const disabled = useMemo(() => scanner.torch === null, [scanner.torch]);
   const onClick = () => {
     if(scanner.torch !== null){
