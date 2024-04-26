@@ -37,6 +37,21 @@ export class CodeScannerController {
     return this._devices;
   }
 
+  get facingMode(){
+    return this.constraints?.facingMode;
+  }
+
+  set facingMode(value:ConstrainDOMString|undefined){
+    if(this.facingMode === value) return;
+    this.notifyObserver("facingMode", this.facingMode, value);
+
+    this.play = false;
+    navigator.mediaDevices.getUserMedia({video:{facingMode:value},audio:false}).then((stream) => {
+      if(this._video) this._video.srcObject = stream;
+      this.play = true;
+    });
+  }
+
   get video(){
     return this._video;
   }

@@ -3,6 +3,7 @@ import { CodeScannerController, CodeScannerControllerOptions, defaultId, default
 import { PlayButton } from "./features/PlayButton";
 import { TorchButton } from "./features/TorchButton";
 import { ZoomSlider } from "./features/ZoomSlider";
+import { FacingModeButton } from "./features/FacingModeButton";
 
 export type CodeScannerProps = {
   id?: string;
@@ -42,6 +43,7 @@ export const CodeScanner = ({id=defaultId, options=defaultOptions}: CodeScannerP
           <div className="col-span-3">
             <ZoomSlider scanner={ref.current} />
           </div>
+          <FacingModeButton scanner={ref.current} />
           <PlayButton scanner={ref.current} />
           <TorchButton scanner={ref.current} />
         </div>
