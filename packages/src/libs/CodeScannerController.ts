@@ -1,9 +1,11 @@
 import { scanImageData } from '@undecaf/zbar-wasm';
+import { ZBarSymbolType } from '@undecaf/zbar-wasm';
 
 type Observer = (<T>(a: string, b: T, c: T) => void);
 
 export class CodeScannerController {
   private _devices: MediaDeviceInfo[] = [];
+  private _formats: ZBarSymbolType[] = [];
   private _video: HTMLVideoElement;
   private _scanId: number | null = null;
   private _sleepId: number | null = null;
@@ -20,9 +22,10 @@ export class CodeScannerController {
     this._video.style.height = '100%';
     container.appendChild(this._video);
 
+    this.formats = options.formats;
+
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       this._devices = devices.filter(device => device.kind === 'videoinput');
-
     }).catch((err) => {
       console.error('Error getting devices', err);
     });
@@ -35,6 +38,15 @@ export class CodeScannerController {
 
   get devices(){
     return this._devices;
+  }
+
+  get formats(){
+    return this._formats;
+  }
+
+  set formats(value:ZBarSymbolType[]){
+    this._formats = [...new Set([...this._formats, ...value])];
+    this.notifyObserver("formats", this.formats, this.formats);
   }
 
   get facingMode(){
@@ -134,7 +146,7 @@ export class CodeScannerController {
     console.time("decode");
     const imageData = this.drawImage(this._video);
     const symbols = await scanImageData(imageData);
-    const results = symbols.map(symbol => symbol.decode());
+    const results = symbols.filter(symbol=>this.formats.includes(symbol.type)).map(symbol => symbol.decode());
     console.timeEnd("decode");
     console.log('results', results);
     return results;
@@ -188,6 +200,7 @@ export type CodeScannerControllerOptions = {
   interval: number;
   autoPlay: boolean;
   facingMode: ConstrainDOMString;
+  formats: ZBarSymbolType[];
 };
 
 export const defaultId = 'code-scanner';
@@ -196,4 +209,5 @@ export const defaultOptions: CodeScannerControllerOptions = {
   interval: 500,
   autoPlay: true,
   facingMode: 'environment',
+  formats: [ZBarSymbolType.ZBAR_QRCODE]
 };
