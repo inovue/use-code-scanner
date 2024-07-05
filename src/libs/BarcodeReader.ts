@@ -1,164 +1,183 @@
-import { readBarcodesFromImageData, ZXingReadResult, ZXingReadOptions } from '@sec-ant/zxing-wasm/reader';
+import { readBarcodesFromImageData, type ReaderOptions } from 'zxing-wasm/reader';
 
-enum VideoState {
+
+const defaultReaderOptions: ReaderOptions = {
+  tryHarder: true,
+  formats: ["QRCode"],
+  // maxNumberOfSymbols: 1,
+};
+
+enum VideoStatus {
   Playing = "playing",
   Paused = "paused",
   Stopped = "stopped",
   Null = "null"
 }
-
-interface BarcodeReaderOptions {
-  facingMode?: 'user' | 'environment';
-  decodeInterval?: number; // milliseconds
-  autoPauseTime?: number; // milliseconds
+enum FacingMode {
+  User = "user",
+  Environment = "environment"
 }
 
+interface BarcodeReaderOptions {
+  facingMode: 'user' | 'environment';
+  decodeInterval: number; // milliseconds
+  autoPauseTime: number; // milliseconds
+}
+const defaultBarcodeReaderOptions: BarcodeReaderOptions = {
+  facingMode: 'environment',
+  decodeInterval: 100,
+  autoPauseTime: 0
+};
+
 class BarcodeReader {
+  private container: HTMLElement;
   private video: HTMLVideoElement;
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
-  private currentState: VideoState;
-  private stream: MediaStream | null;
-  private zoomValue: number;
-  private torchValue: boolean;
-  private decodeInterval: number;
-  private autoPauseTime: number;
-  private decodeTimeout: NodeJS.Timeout | null;
+  private decodeTimeout: number | null;
+  private options: BarcodeReaderOptions;
 
-  constructor(private containerId: string, private options: BarcodeReaderOptions = {}) {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      throw new Error(`Container element with id '${containerId}' not found`);
+  constructor(
+    private containerId: string,
+    _options?: BarcodeReaderOptions
+  ) {
+    this.options = { ...defaultBarcodeReaderOptions, ..._options };
+    const container = document.getElementById(this.containerId);
+    if(container === null){
+      throw new Error(`Container element with id '${this.containerId}' not found`);
     }
-
-    this.video = document.createElement('video');
+    this.container = container;
+    this.video = document.createElement('video');;
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d')!;
-    this.currentState = VideoState.Null;
-    this.stream = null;
-    this.zoomValue = 1;
-    this.torchValue = false;
-    this.decodeInterval = options.decodeInterval || 100; // default 100ms
-    this.autoPauseTime = options.autoPauseTime || 0; // default 0ms (no auto pause)
     this.decodeTimeout = null;
 
-    container.appendChild(this.video);
-    container.appendChild(this.canvas);
+    this.container.appendChild(this.video);
+    this.container.appendChild(this.canvas);
 
-    this.setupVideoStream().catch(error => {
-      console.error("Error setting up video stream:", error);
-      throw new Error("Failed to set up video stream");
-    });
+    const { facingMode } = this.options;
+    this.stream = facingMode
   }
 
-  private async setupVideoStream() {
-    try {
-      const constraints: MediaStreamConstraints = { video: {} };
-      if (this.options.facingMode) {
-        constraints.video = { facingMode: this.options.facingMode };
-      }
-      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (!this.stream) {
-        throw new Error("Failed to get user media stream");
-      }
-      this.video.srcObject = this.stream;
-      this.video.addEventListener('loadedmetadata', () => {
-        this.currentState = VideoState.Playing;
-        if (this.autoPauseTime > 0) {
-          setTimeout(() => this.pause(), this.autoPauseTime);
-        }
-        requestAnimationFrame(() => this.decodeFrame());
-      });
-    } catch (error) {
-      console.error("Error accessing video stream:", error);
-      throw new Error("Failed to access video stream");
-    }
+  private get stream(): MediaStream | null {
+    return this.video?.srcObject as MediaStream | null;
   }
 
-  private get videoState(): VideoState {
-    return this.currentState;
-  }
-
-  private set videoState(newState: VideoState) {
-    if (newState === VideoState.Playing && this.currentState !== VideoState.Playing) {
-      this.video.play().catch(error => {
-        console.error("Error playing video:", error);
-        throw new Error("Failed to play video");
-      });
-      this.currentState = VideoState.Playing;
-      requestAnimationFrame(() => this.decodeFrame());
-    } else if (newState === VideoState.Paused && this.currentState === VideoState.Playing) {
-      this.video.pause();
-      this.currentState = VideoState.Paused;
-    } else if (newState === VideoState.Stopped && this.currentState !== VideoState.Stopped) {
-      this.video.pause();
+  private set stream(facingModeOrDeviceId: string | null) {
+    if (facingModeOrDeviceId === null) {
       this.video.srcObject = null;
-      this.stream?.getTracks().forEach(track => track.stop());
-      this.currentState = VideoState.Stopped;
-      this.stream = null;
+    } else {
+      const constraintsBase = {
+        video: this.isFacingMode(facingModeOrDeviceId) ?
+          { facingMode: facingModeOrDeviceId } :
+          { deviceId: facingModeOrDeviceId },
+        audio: false
+      }
+      navigator.mediaDevices.getUserMedia(constraintsBase).then((stream) => {
+        this.video.srcObject = stream;
+        
+      }).catch((error) => {
+        console.error("Error accessing video stream:", error);
+        throw new Error("Failed to access video stream");
+      });
+    }
+  }
+  private isFacingMode(value: string) {
+    return Object.values(FacingMode).includes(value as FacingMode);
+  }
+
+  public get status(): VideoStatus {
+    if(!this.video){
+      return VideoStatus.Null;
+    } else if (this.video.paused) {
+      return VideoStatus.Paused;
+    } else if (this.video.ended) {
+      return VideoStatus.Stopped;
+    }
+    return VideoStatus.Playing;
+  }
+
+  public set status(newState: VideoStatus) {
+    switch (newState) {
+      case VideoStatus.Playing:
+        this.video.play();
+        break;
+      case VideoStatus.Paused:
+        this.video.pause();
+        break;
+      case VideoStatus.Stopped:
+        this.video.pause();
+        this.stream = null;
+        break;
+      case VideoStatus.Null:
+        this.stream = null;
+        break;
     }
   }
 
-  private getVideoTracks() {
-    return this.stream?.getVideoTracks();
+  private get tracks() {
+    return this.stream?.getVideoTracks() ?? null;
+  }
+  private get track() {
+    return this.tracks?.[0] ?? null;
   }
 
-  private async decodeFrame() {
-    if (this.currentState === VideoState.Playing) {
-      this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-      const imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+  private get capabilities() {
+    return this.tracks?.map(track => track.getCapabilities()) ?? null;
+  }
+  private get capabilitie() {
+    return this.capabilities?.[0] ?? null;
+  }
 
-      try {
-        const results: ZXingReadResult[] = await readBarcodesFromImageData(imageData, { tryHarder: true } as ZXingReadOptions);
-        if (results.length > 0) {
-          const event = new CustomEvent('barcodeDetected', { detail: results[0] });
-          document.dispatchEvent(event);
-        }
-      } catch (error) {
-        console.error("Error decoding barcode:", error);
-        throw new Error("Failed to decode barcode");
+  private get constraints() {
+    return this.tracks?.map(tracks => tracks.getConstraints()) ?? null;
+  }
+  private get constraint() {
+    return this.constraints?.[0] ?? null;
+  }
+
+  private async decode(options: ReaderOptions = defaultReaderOptions) {
+    this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+    const imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+    try {
+      const results = await readBarcodesFromImageData(imageData, options);
+      if (results.length > 0) {
+        const event = new CustomEvent('barcodeDetected', { detail: results[0] });
+        document.dispatchEvent(event);
       }
-
-      this.decodeTimeout = setTimeout(() => {
-        requestAnimationFrame(() => this.decodeFrame());
-      }, this.decodeInterval);
+    } catch (error) {
+      console.error("Error decoding barcode:", error);
+      throw new Error("Failed to decode barcode");
     }
   }
 
   public get zoom(): number {
-    return this.zoomValue;
+    return this.constraint?.zoom || 1;
   }
 
   public set zoom(value: number) {
-    this.zoomValue = value;
-    const track = this.getVideoTracks()?.[0];
-    if (track?.getCapabilities().zoom) {
-      track.applyConstraints({ advanced: [{ zoom: value }] });
+    if (this.capabilitie?.zoom) {
+      this.track?.applyConstraints({ advanced: [{ zoom: value }] });
     } else {
-      throw new Error("Zoom is not supported on the video track");
+      throw new Error("Zoom is not supported on the track");
     }
   }
 
-  public get torch(): boolean {
-    return this.torchValue;
+  public get torch(): boolean | null {
+    if (this.capabilitie?.torch) {
+      return this.constraint?.torch || false;
+    } else {
+      return null
+    }
   }
 
   public set torch(value: boolean) {
-    this.torchValue = value;
-    const track = this.getVideoTracks()?.[0];
-    if (track?.getCapabilities().torch) {
-      track.applyConstraints({ advanced: [{ torch: this.torchValue }] });
+    if (this.capabilitie?.torch) {
+      this.track?.applyConstraints({ advanced: [{ torch: value }] });
     } else {
-      throw new Error("Torch is not supported on the video track");
+      throw new Error("Torch is not supported on the track");
     }
-  }
-
-  public stop() {
-    if (this.decodeTimeout) {
-      clearTimeout(this.decodeTimeout);
-      this.decodeTimeout = null;
-    }
-    super.stop();
   }
 }
 
