@@ -1,5 +1,5 @@
 import { readBarcodesFromImageData, type ReaderOptions } from 'zxing-wasm/reader';
-
+import { FacingMode, FacingModeType } from './value';
 
 const defaultReaderOptions: ReaderOptions = {
   tryHarder: true,
@@ -7,24 +7,26 @@ const defaultReaderOptions: ReaderOptions = {
   // maxNumberOfSymbols: 1,
 };
 
-enum VideoStatus {
+enum VideoStatusRequestType {
   Playing = "playing",
   Paused = "paused",
   Stopped = "stopped",
   Null = "null"
 }
-enum FacingMode {
-  User = "user",
-  Environment = "environment"
+type VideoStatus = {
+  playing: boolean;
+  paused: boolean;
+  stopped: boolean;
 }
 
+
 interface BarcodeReaderOptions {
-  facingMode: 'user' | 'environment';
+  facingMode: FacingMode;
   decodeInterval: number; // milliseconds
   autoPauseTime: number; // milliseconds
 }
 const defaultBarcodeReaderOptions: BarcodeReaderOptions = {
-  facingMode: 'environment',
+  facingMode: new FacingMode(FacingModeType.Environment),
   decodeInterval: 100,
   autoPauseTime: 0
 };
@@ -63,13 +65,13 @@ class BarcodeReader {
     return this.video?.srcObject as MediaStream | null;
   }
 
-  private set stream(facingModeOrDeviceId: string | null) {
+  private set stream(facingModeOrDeviceId: FacingMode | string | null) {
     if (facingModeOrDeviceId === null) {
       this.video.srcObject = null;
     } else {
       const constraintsBase = {
-        video: this.isFacingMode(facingModeOrDeviceId) ?
-          { facingMode: facingModeOrDeviceId } :
+        video: facingModeOrDeviceId instanceof FacingMode ?
+          { facingMode: facingModeOrDeviceId.value } :
           { deviceId: facingModeOrDeviceId },
         audio: false
       }
@@ -82,37 +84,42 @@ class BarcodeReader {
       });
     }
   }
-  private isFacingMode(value: string) {
-    return Object.values(FacingMode).includes(value as FacingMode);
-  }
 
-  public get status(): VideoStatus {
+  
+  public get status(): VideoStatus|null {
     if(!this.video){
-      return VideoStatus.Null;
-    } else if (this.video.paused) {
-      return VideoStatus.Paused;
-    } else if (this.video.ended) {
-      return VideoStatus.Stopped;
+      return null;
+    }else{
+      return {
+        playing: !this.video.paused && !this.video.ended,
+        paused: this.video.paused,
+        stopped: this.video.ended 
+      }
     }
-    return VideoStatus.Playing;
   }
 
-  public set status(newState: VideoStatus) {
-    switch (newState) {
-      case VideoStatus.Playing:
-        this.video.play();
-        break;
-      case VideoStatus.Paused:
-        this.video.pause();
-        break;
-      case VideoStatus.Stopped:
-        this.video.pause();
-        this.stream = null;
-        break;
-      case VideoStatus.Null:
-        this.stream = null;
-        break;
+  private async play() {
+    await this.video.play();
+  }
+  private pause() {
+    this.video.pause();
+  }
+  private stop() {
+    this.video.pause();
+    this.stream = null;
+  }
+  private null() {
+    this.stream = null;
+  }
+
+  public set status(requestType: VideoStatusRequestType) {
+    const videoStatusMethods = {
+      [VideoStatusRequestType.Playing]: async () => await this.play(),
+      [VideoStatusRequestType.Paused]: () => this.pause(),
+      [VideoStatusRequestType.Stopped]: () => this.stop(),
+      [VideoStatusRequestType.Null]: () => this.null(),
     }
+    videoStatusMethods[requestType]();
   }
 
   private get tracks() {
@@ -130,7 +137,7 @@ class BarcodeReader {
   }
 
   private get constraints() {
-    return this.tracks?.map(tracks => tracks.getConstraints()) ?? null;
+    return this.tracks?.map(track => track.getConstraints()) ?? null;
   }
   private get constraint() {
     return this.constraints?.[0] ?? null;
