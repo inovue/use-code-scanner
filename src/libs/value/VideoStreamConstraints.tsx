@@ -1,8 +1,10 @@
 import { FacingMode } from "./FacingMode";
 
+export type FacingModeOrDeviceId = FacingMode | string;
+
 export class VideoStreamConstraints {
   private readonly _value: MediaStreamConstraints;
-  constructor(facingModeOrDeviceId: FacingMode | string) {
+  constructor(facingModeOrDeviceId: FacingModeOrDeviceId) {
     if(facingModeOrDeviceId instanceof FacingMode){
       this._value = { 
         video: { facingMode: facingModeOrDeviceId.value },

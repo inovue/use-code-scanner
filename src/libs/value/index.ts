@@ -2,5 +2,5 @@
 export * from './FacingMode';
 export * from './VideoStreamConstraints';
 
-export * from './TorchValue';
-export * from './ZoomValue';
+export * from '../model/Torch.ts';
+export * from '../model/Zoom.ts';
